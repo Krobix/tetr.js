@@ -35,11 +35,16 @@ class Piece {
     }
 
     moveDown(){
+        var oldSquares = [];
+        for(var i=0; i<this.squares.length; i++){
+            oldSquares.push(this.squares[i]);
+        }
         this.emptySquares();
         for(var i=0; i<this.squares.length; i++){
             var x=this.squares[i].x, y=this.squares[i].y;
             var newSquare = this.game.getSquare(x, y+1);
             if(newSquare==null || newSquare.filled) {
+                this.squares = oldSquares;
                 this.fillSquares();
                 this.moving = false;
                 break;
@@ -49,11 +54,16 @@ class Piece {
     }
 
     moveLeft(){
+        var oldSquares = [];
+        for(var i=0; i<this.squares.length; i++){
+            oldSquares.push(this.squares[i]);
+        }
         this.emptySquares();
         for(var i=0; i<this.squares.length; i++){
             var x=this.squares[i].x, y=this.squares[i].y;
             var newSquare = this.game.getSquare(x-1, y);
             if(newSquare==null || newSquare.filled) {
+                this.squares = oldSquares;
                 this.fillSquares();
                 break;
             }
@@ -62,11 +72,16 @@ class Piece {
     }
 
     moveRight(){
+        var oldSquares = [];
+        for(var i=0; i<this.squares.length; i++){
+            oldSquares.push(this.squares[i]);
+        }
         this.emptySquares();
         for(var i=0; i<this.squares.length; i++){
             var x=this.squares[i].x, y=this.squares[i].y;
             var newSquare = this.game.getSquare(x+1, y);
             if(newSquare==null || newSquare.filled) {
+                this.squares = oldSquares;
                 this.fillSquares();
                 break;
             }
@@ -387,11 +402,11 @@ class Game {
     genPiece(){
         var num = Math.floor(Math.random()*5);
         var x = Math.floor(this.width/3);
-        if(num==0) this.currentPiece = new StraightPiece(this, x, 1);
-        else if(num==1) this.currentPiece = new SquarePiece(this, x, 1);
-        else if(num==2) this.currentPiece = new LPiece(this, x, 1);
-        else if(num==3) this.currentPiece = new SPiece(this, x, 1);
-        else this.currentPiece = new PlusPiece(this, x, 1);
+        if(num==0) this.currentPiece = new StraightPiece(this, x, 0);
+        else if(num==1) this.currentPiece = new SquarePiece(this, x, 0);
+        else if(num==2) this.currentPiece = new LPiece(this, x, 0);
+        else if(num==3) this.currentPiece = new SPiece(this, x, 0);
+        else this.currentPiece = new PlusPiece(this, x, 0);
         this.currentPiece.fillSquares();
     }
 
@@ -401,19 +416,52 @@ class Game {
         }
     }
 
+    checkClearedlines(){
+        for(var i=this.height-1; i>=0; i--){
+            var cleared = true;
+            for(var j=0; j<this.width; j++){
+                if(!this.getSquare(j, i).filled) {
+                    cleared = false;
+                    break;
+                }
+            }
+            if(cleared){
+                for(var j=0; j<this.width; j++){
+                    var s = this.getSquare(j, i);
+                    var index = this.pieces.indexOf(s.piece);
+                    if(s.filled){
+                        s.piece.emptySquares();
+                        this.pieces.splice(index, 1);
+                    }
+                }
+            }
+        }
+    }
+
     update(){
         if(this.currentPiece==null) this.genPiece();
         console.log(this.currentPiece);
         console.log(this.squares);
-
-        this.currentPiece.moveDown();
 
         if(!this.currentPiece.moving) {
             this.pieces.push(this.currentPiece)
             this.currentPiece = null;
         }
 
+        this.currentPiece.moveDown();
+
         this.currentPiece.fillSquares();
+
+        for(var i=0; i<this.pieces.length; i++){
+            for(var j=0; j<this.height; j++){
+                this.pieces[i].moveDown();
+                this.pieces[i].fillSquares();
+            }
+            var p = this.pieces[i];
+            p.fillSquares();
+        }
+
+        this.checkClearedlines();
 
         this.draw();
     }
@@ -503,7 +551,7 @@ function regularGame(){
 
     setInterval(function(){
         game.update();
-    }, 1000);
+    }, 900);
 }
 
 regularGame();
